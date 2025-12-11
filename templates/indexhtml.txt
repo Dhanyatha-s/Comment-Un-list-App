@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Home | NeonGram{% endblock %}
+
+{% block content %}
+  {% for post in posts %}
+    <!-- Post card -->
+    <div class="max-w-md mx-auto mt-12 rounded-2xl p-4 bg-gray-100/10 backdrop-blur-lg border-2 border-gray-200/20 shadow-lg">
+      <!-- Profile -->
+      <div class="flex items-center mb-4">
+        <!-- Profile Picture -->
+        <img src="{{ url_for('static', filename='uploads/profile-pic.jpg') }}" alt="profile picture"
+             class="w-10 h-10 rounded-full border-2 border-gray-200 shadow-md">
+
+        <!-- Username -->
+        <span class="ml-3 text-gray-900 font-semibold text-sm">
+          {{ post.author.username }}
+        </span>
+
+        <!-- Follow Button -->
+        <button class="ml-auto px-4 py-1.5 text-sm font-medium 
+                        border-2 border-gray-300 rounded-md
+                        text-gray-700 hover:bg-gray-300 hover:text-black 
+                        transition">
+          Follow
+        </button>
+      </div>
+
+      <!-- Post Image -->
+      <img src="{{ url_for('static', filename='uploads/' + post.image) }}" 
+           alt="post" class="w-full rounded-xl mb-4">
+
+      <!-- Action Bar -->
+      <div class="flex items-center space-x-6 mb-3">
+        <!-- Like Button -->
+        <div class="flex items-center space-x-2">
+          <button class="text-gray-800 hover:scale-110 transition">
+            <!-- Heart Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
+                 stroke-width="2" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" 
+                    d="M21 8.25c0-2.485-2.1-4.5-4.75-4.5-1.697 0-3.197.926-3.95 2.25
+                        -.753-1.324-2.253-2.25-3.95-2.25C6.1 3.75 4 5.765 4 8.25
+                        c0 7.22 8 11.25 8 11.25s8-4.03 8-11.25z" />
+            </svg>
+          </button>
+          <span class="text-gray-800 text-sm">{{ post.likes }}</span>
+        </div>
+
+        <!-- Comment Button -->
+        <div class="flex items-center space-x-2">
+          <button type="button" 
+                  class="hover:scale-110 transition"
+                  onclick="openCommentsOverlay({{ post.id }})">
+            <!-- Comment Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
+                 stroke-width="2" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" 
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8
+                        -1.575 0-3.05-.322-4.313-.894L3 20.25l1.318-3.947C3.488
+                        15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+          </button>
+          <span id="comment-count-{{ post.id }}" class="text-gray-800 text-sm">
+            {{ post.comments|length }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Caption -->
+      <div class="mb-3">
+        <p class="text-black text-sm">
+          <span class="text-black font-semibold">{{ post.author.username }}:</span>
+          {{ post.caption }}
+        </p>
+      </div>
+      
+      <!-- Timestamp -->
+      <div class="mb-1">
+        <p class="text-gray-400 text-sm">
+          {{ time_since(post.timestamp) }}
+        </p>
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- Comments Overlay -->
+  <div id="comments-overlay" 
+       class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 backdrop-blur-sm">
+    <div class="bg-white w-full h-full md:w-2/3 md:h-4/5 md:rounded-xl shadow-2xl flex flex-col">
+      <!-- Header -->
+      <div class="flex justify-between items-center p-4 border-b bg-gray-50 md:rounded-t-xl">
+        <h2 class="text-xl font-bold text-gray-800">Comments</h2>
+        <button onclick="closeCommentsOverlay()" 
+                class="text-gray-600 hover:text-gray-800 text-3xl font-light">
+          &times;
+        </button>
+      </div>
+
+      <!-- Comments Container -->
+      <div class="flex-1 overflow-y-auto p-4" id="comments-container">
+        <div class="text-center text-gray-500">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p class="mt-2">Loading comments...</p>
+        </div>
+      </div>
+
+      <!-- Add Comment Section -->
+      <div class="p-4 border-t bg-gray-50 md:rounded-b-xl">
+        <div class="flex space-x-3">
+          <img src="{{ url_for('static', filename='uploads/profile-pic.jpg') }}" 
+               alt="your profile" class="w-8 h-8 rounded-full">
+          <div class="flex-1 flex">
+            <input id="comment-input" 
+                   type="text" 
+                   placeholder="Add a comment..."
+                   class="flex-1 border border-gray-300 rounded-l-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                   onkeypress="handleCommentKeyPress(event)">
+            <button onclick="submitComment()" 
+                    class="px-4 py-2 bg-blue-500 text-white text-sm rounded-r-lg hover:bg-blue-600 transition">
+              Post
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global variable to track current post ID
+    let currentPostId = null;
+
+    /**
+     * Opens the comments overlay for a specific post
+     * @param {number} postId - The ID of the post to show comments for
+     */
+    function openCommentsOverlay(postId) {
+      currentPostId = postId;
+      const overlay = document.getElementById('comments-overlay');
+      
+      // Show overlay with flex display for centering
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      
+      // Prevent body scrolling when overlay is open
+      document.body.style.overflow = 'hidden';
+      
+      // Load comments for this post
+      loadComments(postId);
+    }
+
+    /**
+     * Closes the comments overlay
+     */
+    function closeCommentsOverlay() {
+      const overlay = document.getElementById('comments-overlay');
+      overlay.classList.add('hidden');
+      overlay.classList.remove('flex');
+      
+      // Restore body scrolling
+      document.body.style.overflow = 'auto';
+      
+      // Clear current post ID
+      currentPostId = null;
+      
+      // Clear comment input
+      document.getElementById('comment-input').value = '';
+    }
+
+    /**
+     * Loads comments for a specific post via AJAX
+     * @param {number} postId - The ID of the post to load comments for
+     */
+    async function loadComments(postId) {
+      const container = document.getElementById('comments-container');
+      
+      try {
+        const response = await fetch(`/comments/${postId}`);
+        const data = await response.json();
+        
+        if (data.comments.length === 0) {
+          container.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+              <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.575 0-3.05-.322-4.313-.894L3 20.25l1.318-3.947C3.488 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                </path>
+              </svg>
+              <p>No comments yet. Be the first to comment!</p>
+            </div>
+          `;
+        } else {
+          container.innerHTML = data.comments.map(comment => `
+            <div class="flex space-x-3 mb-4 p-3 bg-gray-50 rounded-lg">
+              <img src="{{ url_for('static', filename='uploads/profile-pic.jpg') }}" 
+                   alt="profile" class="w-8 h-8 rounded-full flex-shrink-0">
+              <div class="flex-1">
+                <p class="text-sm">
+                  <span class="font-semibold text-gray-800">${comment.username}</span>
+                  <span class="text-gray-600 ml-2">${comment.content}</span>
+                </p>
+                <p class="text-xs text-gray-500 mt-1">${comment.timestamp}</p>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Error loading comments:', error);
+        container.innerHTML = `
+          <div class="text-center text-red-500 py-8">
+            <p>Error loading comments. Please try again.</p>
+          </div>
+        `;
+      }
+    }
+
+    /**
+     * Submits a new comment for the current post
+     */
+    async function submitComment() {
+      const input = document.getElementById('comment-input');
+      const content = input.value.trim();
+      
+      if (!content) {
+        alert('Please enter a comment');
+        return;
+      }
+      
+      if (!currentPostId) {
+        alert('No post selected');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/comments/${currentPostId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content: content })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Clear input
+          input.value = '';
+          
+          // Reload comments to show the new one
+          loadComments(currentPostId);
+          
+          // Update comment count in the post
+          const countElement = document.getElementById(`comment-count-${currentPostId}`);
+          if (countElement) {
+            countElement.textContent = parseInt(countElement.textContent) + 1;
+          }
+          
+        } else {
+          const errorData = await response.json();
+          alert(errorData.error || 'Error adding comment');
+        }
+      } catch (error) {
+        console.error('Error submitting comment:', error);
+        alert('Error submitting comment. Please try again.');
+      }
+    }
+
+    /**
+     * Handles Enter key press in comment input
+     * @param {KeyboardEvent} event - The keyboard event
+     */
+    function handleCommentKeyPress(event) {
+      if (event.key === 'Enter') {
+        submitComment();
+      }
+    }
+
+    // Close overlay when clicking outside the content area
+    document.getElementById('comments-overlay').addEventListener('click', function(event) {
+      if (event.target === this) {
+        closeCommentsOverlay();
+      }
+    });
+  </script>
+
+{% endblock %}

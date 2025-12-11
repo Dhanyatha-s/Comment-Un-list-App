@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}NeoGram{% endblock %}</title>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f2f2f2] text-black">
+
+  <!-- Navbar -->
+<nav class=" sticky top-0 z-50 w-full flex justify-between items-center p-4 bg-white/10 backdrop-blur-lg border-b border-white/20">
+  <!-- Left: Logo -->
+  <h1 class="text-2xl font-extrabold tracking-tight">NeoGram</h1>
+
+  <!-- Right: Buttons -->
+  <div class="flex items-center space-x-4">
+    <!-- Post Button -->
+    <a href="{{ url_for('upload_post') }}" 
+       class="px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-medium shadow-md hover:scale-105 transition">
+      Post
+    </a>
+
+    <!-- Logout Button -->
+    <button class="px-4 py-2 rounded-xl bg-white/10 text-gray-300 border border-white/20 text-sm hover:text-black transition">
+      Logout
+    </button>
+  </div>
+</nav>
+
+
+  <!-- Page-specific content -->
+  <main class="max-w-4xl mx-auto p-10">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{{ url_for('static', filename='js/comments.js') }}"></script>
+
+
+</body>
+
+</html>
