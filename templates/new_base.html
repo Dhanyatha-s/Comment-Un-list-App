@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}NeoGram{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --surface: #ffffff;
+      --border: #ebebeb;
+      --text: #1a1a1a;
+      --muted: #8a8a8a;
+      --accent: #3b82f6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: #b0b0b0; }
+
+    /* Smooth page transitions */
+    main { animation: fadeUp 0.3s ease both; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile touch target improvements */
+    button, a { -webkit-tap-highlight-color: transparent; }
+
+    /* Prevent text selection on buttons */
+    button { user-select: none; }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── Navbar ─────────────────────────────────────────────────────────── -->
+  <nav class="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-xl border-b border-gray-100">
+    <div class="max-w-[470px] sm:max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+
+      <!-- Logo -->
+      <a href="{{ url_for('home') }}" 
+         class="font-['DM_Serif_Display'] text-xl tracking-tight text-gray-900 hover:opacity-70 transition">
+        NeoGram
+      </a>
+
+      <!-- Nav Actions -->
+      <div class="flex items-center gap-2">
+
+        <!-- Upload / New Post -->
+        <a href="{{ url_for('upload_post') }}"
+           class="flex items-center gap-1.5 px-3.5 py-2 bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-gray-700 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+          </svg>
+          <span class="hidden sm:inline">New Post</span>
+          <span class="sm:hidden">Post</span>
+        </a>
+
+        <!-- Profile avatar (decorative) -->
+        <button class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition">
+          U
+        </button>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Main Content ────────────────────────────────────────────────────── -->
+  <main class="max-w-[470px] sm:max-w-2xl mx-auto px-4 pt-6 pb-20">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── Bottom Mobile Nav ───────────────────────────────────────────────── -->
+  <nav class="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-xl border-t border-gray-100 safe-area-inset-bottom">
+    <div class="flex justify-around items-center h-14 px-2">
+      <!-- Home -->
+      <a href="{{ url_for('home') }}" 
+         class="flex flex-col items-center gap-0.5 text-gray-500 hover:text-gray-900 transition py-1 px-3">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        <span class="text-[10px] font-medium">Home</span>
+      </a>
+
+      <!-- New Post -->
+      <a href="{{ url_for('upload_post') }}"
+         class="flex flex-col items-center gap-0.5 text-gray-500 hover:text-gray-900 transition py-1 px-3">
+        <div class="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+          </svg>
+        </div>
+        <span class="text-[10px] font-medium">Post</span>
+      </a>
+
+      <!-- Profile -->
+      <button class="flex flex-col items-center gap-0.5 text-gray-500 hover:text-gray-900 transition py-1 px-3">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+        <span class="text-[10px] font-medium">Profile</span>
+      </button>
+    </div>
+  </nav>
+
+</body>
+</html>

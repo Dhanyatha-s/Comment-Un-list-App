@@ -284,3 +284,865 @@
   </script>
 
 {% endblock %}
+
+
+
+
+#################################
+VERSION 2
+#################################
+{% extends "base.html" %}
+{% block title %}Home | NeoGram{% endblock %}
+
+{% block content %}
+
+<div class="flex flex-col items-center gap-8 pb-24">
+
+  {% if not posts %}
+  <div class="w-full max-w-sm text-center py-24">
+    <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      </svg>
+    </div>
+    <p class="text-gray-500 font-medium">No posts yet.</p>
+    <a href="{{ url_for('upload_post') }}"
+       class="inline-block mt-4 px-5 py-2.5 bg-black text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition">
+      Share your first post
+    </a>
+  </div>
+  {% endif %}
+
+  {% for post in posts %}
+  <article id="post-{{ post.id }}"
+    class="w-full max-w-[470px] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300">
+
+    <!-- Header -->
+    <header class="flex items-center px-4 py-3 gap-3">
+      <img src="{{ url_for('static', filename='uploads/profile-pic.jpg') }}"
+        alt="{{ post.author.username }}"
+        class="w-9 h-9 rounded-full object-cover ring-2 ring-offset-1 ring-pink-400 flex-shrink-0">
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-bold text-gray-900 truncate">{{ post.author.username }}</p>
+        <p class="text-xs text-gray-400">{{ time_since(post.timestamp) }}</p>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <button class="px-3 py-1 text-xs font-semibold border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+          Follow
+        </button>
+        <button onclick="deletePost({{ post.id }})" title="Delete post"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition group">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Image -->
+    <div class="w-full aspect-square bg-gray-50 overflow-hidden">
+      <img src="{{ url_for('static', filename='uploads/' + post.image) }}"
+        alt="post" class="w-full h-full object-cover" loading="lazy">
+    </div>
+
+    <!-- Actions -->
+    <div class="px-4 pt-3 pb-1 flex items-center gap-5">
+      <button onclick="toggleLike(this, {{ post.id }})"
+        class="flex items-center gap-1.5 text-gray-500 hover:text-red-500 transition group">
+        <svg id="heart-{{ post.id }}" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+          class="w-6 h-6 transition-transform group-hover:scale-110">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M21 8.25c0-2.485-2.1-4.5-4.75-4.5-1.697 0-3.197.926-3.95 2.25-.753-1.324-2.253-2.25-3.95-2.25C6.1 3.75 4 5.765 4 8.25c0 7.22 8 11.25 8 11.25s8-4.03 8-11.25z"/>
+        </svg>
+        <span id="like-count-{{ post.id }}" class="text-sm font-medium">{{ post.likes }}</span>
+      </button>
+      <button onclick="openCommentsOverlay({{ post.id }})"
+        class="flex items-center gap-1.5 text-gray-500 hover:text-blue-500 transition group">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+          class="w-6 h-6 transition-transform group-hover:scale-110">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.575 0-3.05-.322-4.313-.894L3 20.25l1.318-3.947C3.488 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        <span id="comment-count-{{ post.id }}" class="text-sm font-medium">{{ post.comments|length }}</span>
+      </button>
+      <button class="ml-auto text-gray-400 hover:text-gray-700 transition group">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+          class="w-6 h-6 transition-transform group-hover:scale-110">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Caption -->
+    <div class="px-4 pb-4 mt-1">
+      <p class="text-sm text-gray-800 leading-relaxed">
+        <span class="font-bold text-gray-900 mr-1">{{ post.author.username }}</span>{{ post.caption }}
+      </p>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+
+<!-- ═══════════════ COMMENTS OVERLAY ═══════════════ -->
+<div id="comments-overlay"
+  class="fixed inset-0 z-50 hidden items-center justify-center p-0 sm:p-4"
+  style="background:rgba(0,0,0,0.65);backdrop-filter:blur(6px)">
+
+  <div class="relative bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:w-full sm:max-w-lg sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 flex-shrink-0">
+      <h2 class="text-base font-bold text-gray-900 flex-1">Comments</h2>
+      <button id="ai-help-btn" onclick="toggleAIFilter()"
+        class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg hover:bg-gray-200 transition">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+        <span id="ai-help-text">AI Filter</span>
+      </button>
+      <button onclick="closeCommentsOverlay()"
+        class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 transition text-xl">
+        &times;
+      </button>
+    </div>
+
+    <!-- AI Stats Bar -->
+    <div id="comments-stats" class="hidden px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex-shrink-0">
+      <div class="flex justify-between text-xs text-emerald-700 font-medium">
+        <span>Total: <strong id="total-comments">0</strong></span>
+        <span>Shown: <strong id="showing-comments">0</strong></span>
+        <span class="text-red-600">Filtered: <strong id="filtered-comments">0</strong></span>
+      </div>
+    </div>
+
+    <!-- Comments List -->
+    <div class="flex-1 overflow-y-auto px-4 py-3" id="comments-container">
+      <div class="flex justify-center py-12">
+        <div class="w-6 h-6 rounded-full border-2 border-gray-200 border-t-blue-500 animate-spin"></div>
+      </div>
+    </div>
+
+    <!-- Comment Input Section -->
+    <div class="flex-shrink-0 border-t border-gray-100 px-4 py-3 bg-white">
+
+      <!-- ── Live AI Analysis Bar ─────────────────────────────── -->
+      <div id="ai-analysis-bar" class="hidden mb-2 px-3 py-2 rounded-xl text-xs flex items-center gap-2 transition-all duration-300">
+        <span id="ai-bar-icon" class="text-base leading-none"></span>
+        <span id="ai-bar-text" class="flex-1 font-medium"></span>
+        <span id="ai-bar-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold"></span>
+      </div>
+
+      <div class="flex gap-2 items-center">
+        <img src="{{ url_for('static', filename='uploads/profile-pic.jpg') }}"
+          class="w-8 h-8 rounded-full object-cover flex-shrink-0" alt="you">
+        <div class="flex flex-1 items-center border border-gray-200 rounded-xl overflow-hidden focus-within:border-blue-400 transition" id="input-wrapper">
+          <input id="comment-input" type="text" placeholder="Add a comment…"
+            autocomplete="off"
+            class="flex-1 px-3 py-2.5 text-sm bg-white outline-none placeholder-gray-400"
+            onkeypress="handleCommentKeyPress(event)"
+            oninput="onCommentInput()">
+          <button id="post-btn" onclick="submitComment()"
+            class="px-4 py-2.5 bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 active:bg-blue-700 transition whitespace-nowrap">
+            Post
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ BLOCK MODAL ═══════════════ -->
+<!-- Shown when AI hard-blocks a comment (no override allowed) -->
+<div id="block-modal"
+  class="fixed inset-0 z-[60] hidden items-center justify-center p-4"
+  style="background:rgba(0,0,0,0.72);backdrop-filter:blur(4px)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+    <!-- Red top bar -->
+    <div class="bg-red-500 px-5 py-4 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="font-bold text-white text-sm">Comment Blocked</h3>
+        <p class="text-red-100 text-xs">This comment cannot be posted</p>
+      </div>
+    </div>
+    <div class="px-5 py-4">
+      <p class="text-xs text-gray-500 mb-3">AI detected the following issues:</p>
+      <ul id="block-reasons" class="space-y-2 mb-4 text-sm text-red-700"></ul>
+      <p class="text-xs text-gray-400 mb-4 leading-relaxed">
+        Please rephrase your comment to be respectful and constructive. Harmful, abusive, or toxic content is not allowed.
+      </p>
+      <button onclick="closeBlockModal()"
+        class="w-full py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition">
+        Edit my comment
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ WARN MODAL ═══════════════ -->
+<!-- Shown when AI flags but user can choose to post anyway -->
+<div id="warn-modal"
+  class="fixed inset-0 z-[60] hidden items-center justify-center p-4"
+  style="background:rgba(0,0,0,0.65);backdrop-filter:blur(4px)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+    <div class="bg-amber-400 px-5 py-4 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="font-bold text-white text-sm">Review your comment</h3>
+        <p class="text-amber-100 text-xs">AI flagged a potential issue</p>
+      </div>
+    </div>
+    <div class="px-5 py-4">
+      <ul id="warn-reasons" class="space-y-2 mb-4 text-sm text-amber-700"></ul>
+      <p class="text-xs text-gray-400 mb-4">You can still post, but consider rephrasing.</p>
+      <div class="flex gap-2">
+        <button onclick="closeWarnModal()"
+          class="flex-1 py-2.5 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200 transition">
+          Edit
+        </button>
+        <button onclick="forcePostComment()"
+          class="flex-1 py-2.5 bg-amber-400 text-white text-sm font-semibold rounded-xl hover:bg-amber-500 transition">
+          Post Anyway
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ DELETE POST MODAL ═══════════════ -->
+<div id="delete-post-modal"
+  class="fixed inset-0 z-[60] hidden items-center justify-center p-4"
+  style="background:rgba(0,0,0,0.65);backdrop-filter:blur(4px)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center">
+    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+    </div>
+    <h3 class="font-bold text-gray-900 mb-1">Delete Post?</h3>
+    <p class="text-sm text-gray-500 mb-6">This permanently removes the post and all comments.</p>
+    <div class="flex gap-3">
+      <button onclick="closeDeletePostModal()"
+        class="flex-1 py-2.5 bg-gray-100 text-gray-700 font-semibold text-sm rounded-xl hover:bg-gray-200 transition">
+        Cancel
+      </button>
+      <button id="confirm-delete-post-btn"
+        class="flex-1 py-2.5 bg-red-500 text-white font-semibold text-sm rounded-xl hover:bg-red-600 transition">
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] flex flex-col gap-2 items-center pointer-events-none"></div>
+
+
+<script>
+  // ─── State ────────────────────────────────────────────────────────────────
+  let currentPostId    = null;
+  let aiFilterEnabled  = false;
+  let pendingWarnContent = null;   // stored when warn modal is showing
+
+  // ─── Toast ────────────────────────────────────────────────────────────────
+  function showToast(msg, type = 'info') {
+    const colors = { success: 'bg-gray-900 text-white', error: 'bg-red-500 text-white',
+                     warning: 'bg-amber-400 text-white', info: 'bg-gray-700 text-white' };
+    const el = document.createElement('div');
+    el.className = `pointer-events-auto px-5 py-3 rounded-2xl text-sm font-medium shadow-lg transition-all duration-300 opacity-0 translate-y-2 ${colors[type]||colors.info}`;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    requestAnimationFrame(() => el.classList.remove('opacity-0','translate-y-2'));
+    setTimeout(() => { el.classList.add('opacity-0','translate-y-2'); setTimeout(()=>el.remove(),300); }, 3200);
+  }
+
+  // ─── Block Modal ──────────────────────────────────────────────────────────
+  function showBlockModal(reasons) {
+    const ul = document.getElementById('block-reasons');
+    ul.innerHTML = reasons.map(r =>
+      `<li class="flex items-start gap-2">
+         <span class="text-red-500 mt-0.5 flex-shrink-0">⛔</span>
+         <span>${escHtml(r)}</span>
+       </li>`
+    ).join('');
+    document.getElementById('block-modal').classList.remove('hidden');
+    document.getElementById('block-modal').classList.add('flex');
+    // Highlight the input in red
+    document.getElementById('input-wrapper').classList.add('border-red-400','bg-red-50');
+  }
+
+  function closeBlockModal() {
+    document.getElementById('block-modal').classList.add('hidden');
+    document.getElementById('block-modal').classList.remove('flex');
+    const input = document.getElementById('comment-input');
+    input.focus(); input.select();
+    document.getElementById('input-wrapper').classList.remove('border-red-400','bg-red-50');
+  }
+
+  // ─── Warn Modal ───────────────────────────────────────────────────────────
+  function showWarnModal(reasons, content) {
+    pendingWarnContent = content;
+    const ul = document.getElementById('warn-reasons');
+    ul.innerHTML = reasons.map(r =>
+      `<li class="flex items-start gap-2">
+         <span class="text-amber-500 mt-0.5 flex-shrink-0">⚠</span>
+         <span>${escHtml(r)}</span>
+       </li>`
+    ).join('');
+    document.getElementById('warn-modal').classList.remove('hidden');
+    document.getElementById('warn-modal').classList.add('flex');
+  }
+
+  function closeWarnModal() {
+    document.getElementById('warn-modal').classList.add('hidden');
+    document.getElementById('warn-modal').classList.remove('flex');
+    pendingWarnContent = null;
+    document.getElementById('comment-input').focus();
+  }
+
+  async function forcePostComment() {
+    if (!pendingWarnContent || !currentPostId) return;
+    closeWarnModal();
+    try {
+      const res  = await fetch(`/comments/${currentPostId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: pendingWarnContent, force_post: true }),
+      });
+      if (res.ok) {
+        document.getElementById('comment-input').value = '';
+        resetAnalysisBar();
+        updateCommentCount(+1);
+        loadComments(currentPostId);
+        showToast('Posted (bypassed AI warning)', 'warning');
+      } else {
+        const d = await res.json();
+        showToast(d.error || 'Could not post', 'error');
+      }
+    } catch { showToast('Network error', 'error'); }
+    pendingWarnContent = null;
+  }
+
+  // ─── Real-time AI Analysis Bar ────────────────────────────────────────────
+  let analysisTimer = null;
+
+  function onCommentInput() {
+    const input = document.getElementById('comment-input');
+    const bar   = document.getElementById('ai-analysis-bar');
+    clearTimeout(analysisTimer);
+
+    if (input.value.trim().length < 2) { resetAnalysisBar(); return; }
+
+    // Show typing indicator immediately
+    bar.className = 'mb-2 px-3 py-2 rounded-xl text-xs flex items-center gap-2 transition-all duration-300 bg-gray-50 border border-gray-200';
+    document.getElementById('ai-bar-icon').textContent = '⏳';
+    document.getElementById('ai-bar-text').textContent = 'Analysing…';
+    document.getElementById('ai-bar-badge').textContent = '';
+    bar.classList.remove('hidden');
+
+    analysisTimer = setTimeout(async () => {
+      if (!currentPostId || !input.value.trim()) return;
+      try {
+        const res  = await fetch(`/comments/${currentPostId}/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: input.value.trim() }),
+        });
+        const data = await res.json();
+        if (!data) return;
+        renderAnalysisBar(data);
+      } catch { resetAnalysisBar(); }
+    }, 500);   // 500ms debounce
+  }
+
+  function renderAnalysisBar(data) {
+    const bar    = document.getElementById('ai-analysis-bar');
+    const icon   = document.getElementById('ai-bar-icon');
+    const text   = document.getElementById('ai-bar-text');
+    const badge  = document.getElementById('ai-bar-badge');
+    const verdict = data.verdict;
+    const reasons = data.reasons || [];
+
+    bar.classList.remove('hidden');
+
+    if (verdict === 'block') {
+      bar.className = 'mb-2 px-3 py-2 rounded-xl text-xs flex items-center gap-2 transition-all duration-300 bg-red-50 border border-red-200';
+      icon.textContent  = '⛔';
+      text.className    = 'flex-1 font-medium text-red-700';
+      text.textContent  = reasons[0] || 'Toxic content detected';
+      badge.className   = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white';
+      badge.textContent = 'BLOCKED';
+      // Shake the post button
+      shakePostBtn();
+    } else if (verdict === 'warn') {
+      bar.className = 'mb-2 px-3 py-2 rounded-xl text-xs flex items-center gap-2 transition-all duration-300 bg-amber-50 border border-amber-200';
+      icon.textContent  = '⚠️';
+      text.className    = 'flex-1 font-medium text-amber-700';
+      text.textContent  = reasons[0] || 'Potentially flagged';
+      badge.className   = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-white';
+      badge.textContent = 'REVIEW';
+    } else {
+      bar.className = 'mb-2 px-3 py-2 rounded-xl text-xs flex items-center gap-2 transition-all duration-300 bg-emerald-50 border border-emerald-200';
+      const sentiment = data.analysis?.sentiment?.sentiment || 'neutral';
+      const emojiMap  = { positive: '😊', negative: '😐', neutral: '😐' };
+      icon.textContent  = emojiMap[sentiment] || '😐';
+      text.className    = 'flex-1 font-medium text-emerald-700';
+      text.textContent  = sentiment === 'positive' ? 'Positive comment' : 'Looks good';
+      badge.className   = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white';
+      badge.textContent = '✓ OK';
+    }
+  }
+
+  function resetAnalysisBar() {
+    const bar = document.getElementById('ai-analysis-bar');
+    bar.classList.add('hidden');
+  }
+
+  function shakePostBtn() {
+    const btn = document.getElementById('post-btn');
+    btn.style.transition = 'transform 0.07s ease';
+    let i = 0;
+    const t = setInterval(() => {
+      btn.style.transform = i % 2 === 0 ? 'translateX(4px)' : 'translateX(-4px)';
+      if (++i > 5) { clearInterval(t); btn.style.transform = 'translateX(0)'; }
+    }, 70);
+  }
+
+  // ─── Submit Comment ───────────────────────────────────────────────────────
+  async function submitComment() {
+    const input   = document.getElementById('comment-input');
+    const content = input.value.trim();
+    if (!content || !currentPostId) return;
+
+    try {
+      const res  = await fetch(`/comments/${currentPostId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, force_post: false }),
+      });
+      const data = await res.json();
+
+      // ── BLOCKED (403) — show block modal, DON'T post ──
+      if (res.status === 403) {
+        showBlockModal(data.reasons || ['Toxic content detected']);
+        return;
+      }
+
+      // ── WARNED (422) — show warn modal, user can choose ──
+      if (res.status === 422) {
+        showWarnModal(data.reasons || ['Content flagged by AI'], content);
+        return;
+      }
+
+      // ── SUCCESS (201) ──
+      if (res.ok) {
+        input.value = '';
+        resetAnalysisBar();
+        updateCommentCount(+1);
+        loadComments(currentPostId);
+        showToast('Comment posted!', 'success');
+      } else {
+        showToast(data.error || 'Error posting comment', 'error');
+      }
+    } catch { showToast('Network error. Please try again.', 'error'); }
+  }
+
+  function handleCommentKeyPress(e) {
+    if (e.key === 'Enter') submitComment();
+  }
+
+  // ─── Load Comments ────────────────────────────────────────────────────────
+  async function loadComments(postId) {
+    const container = document.getElementById('comments-container');
+    container.innerHTML = `<div class="flex justify-center py-10">
+      <div class="w-6 h-6 rounded-full border-2 border-gray-200 border-t-blue-500 animate-spin"></div></div>`;
+    try {
+      const url  = aiFilterEnabled ? `/comments/${postId}?filter=ai` : `/comments/${postId}`;
+      const res  = await fetch(url);
+      const data = await res.json();
+
+      if (aiFilterEnabled && data.ai_filtered) {
+        document.getElementById('total-comments').textContent    = data.total_original;
+        document.getElementById('showing-comments').textContent  = data.total_filtered;
+        document.getElementById('filtered-comments').textContent = data.total_original - data.total_filtered;
+      }
+
+      if (!data.comments.length) {
+        container.innerHTML = `<div class="text-center text-gray-400 py-14 flex flex-col items-center gap-3">
+          <svg class="w-10 h-10 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.575 0-3.05-.322-4.313-.894L3 20.25l1.318-3.947C3.488 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+          </svg>
+          <p class="text-sm">${aiFilterEnabled ? 'All comments filtered by AI.' : 'No comments yet. Be the first!'}</p></div>`;
+        return;
+      }
+
+      container.innerHTML = data.comments.map(c => {
+        const approvedBadge = (aiFilterEnabled && c.ai_verdict === 'allow')
+          ? `<span class="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">✓ AI Approved</span>` : '';
+        return `
+          <div id="comment-${c.id}" class="group flex gap-3 py-3 border-b border-gray-50 last:border-0 overflow-hidden" style="max-height:200px">
+            <img src="/static/uploads/profile-pic.jpg" class="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5" alt="${escHtml(c.username)}">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm leading-snug">
+                <span class="font-bold text-gray-900 mr-1.5">${escHtml(c.username)}</span>
+                <span class="text-gray-700">${escHtml(c.content)}</span>
+              </p>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-[11px] text-gray-400">${c.timestamp}</span>
+                ${approvedBadge}
+              </div>
+            </div>
+            <button onclick="deleteComment(${c.id})" title="Delete"
+              class="opacity-0 group-hover:opacity-100 focus:opacity-100 flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 transition self-start mt-0.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>`;
+      }).join('');
+    } catch {
+      container.innerHTML = `<div class="text-center text-red-400 py-8 text-sm">Failed to load comments.</div>`;
+    }
+  }
+
+  // ─── AI Filter Toggle ─────────────────────────────────────────────────────
+  function toggleAIFilter() {
+    aiFilterEnabled = !aiFilterEnabled;
+    const btn   = document.getElementById('ai-help-btn');
+    const text  = document.getElementById('ai-help-text');
+    const stats = document.getElementById('comments-stats');
+    if (aiFilterEnabled) {
+      btn.className = 'flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 transition';
+      text.textContent = 'AI ON';
+      stats.classList.remove('hidden');
+    } else {
+      btn.className = 'flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg hover:bg-gray-200 transition';
+      text.textContent = 'AI Filter';
+      stats.classList.add('hidden');
+    }
+    if (currentPostId) loadComments(currentPostId);
+  }
+
+  // ─── Delete Comment ───────────────────────────────────────────────────────
+  async function deleteComment(commentId) {
+    if (!confirm('Delete this comment?')) return;
+    try {
+      const res = await fetch(`/comments/${commentId}/delete`, { method: 'DELETE' });
+      if (res.ok) {
+        const el = document.getElementById(`comment-${commentId}`);
+        if (el) {
+          el.style.transition = 'all 0.25s ease';
+          el.style.opacity = '0';
+          el.style.maxHeight = el.offsetHeight + 'px';
+          requestAnimationFrame(() => { el.style.maxHeight = '0'; el.style.padding = '0'; });
+          setTimeout(() => { el.remove(); updateCommentCount(-1); }, 260);
+        }
+        showToast('Comment deleted', 'success');
+      } else {
+        showToast('Could not delete comment', 'error');
+      }
+    } catch { showToast('Network error', 'error'); }
+  }
+
+  // ─── Delete Post ──────────────────────────────────────────────────────────
+  function deletePost(postId) {
+    const modal = document.getElementById('delete-post-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.getElementById('confirm-delete-post-btn').onclick = async () => {
+      try {
+        const res = await fetch(`/posts/${postId}/delete`, { method: 'DELETE' });
+        if (res.ok) {
+          const card = document.getElementById(`post-${postId}`);
+          if (card) { card.style.transition = 'all 0.35s'; card.style.opacity = '0'; card.style.transform = 'scale(0.95)'; setTimeout(() => card.remove(), 350); }
+          showToast('Post deleted', 'success');
+        } else { showToast('Could not delete post', 'error'); }
+      } catch { showToast('Network error', 'error'); }
+      closeDeletePostModal();
+    };
+  }
+
+  function closeDeletePostModal() {
+    document.getElementById('delete-post-modal').classList.add('hidden');
+    document.getElementById('delete-post-modal').classList.remove('flex');
+  }
+
+  // ─── Like Toggle ──────────────────────────────────────────────────────────
+  function toggleLike(btn, postId) {
+    const heart = document.getElementById(`heart-${postId}`);
+    const count = document.getElementById(`like-count-${postId}`);
+    const liked = heart.getAttribute('fill') === 'currentColor';
+    heart.setAttribute('fill', liked ? 'none' : 'currentColor');
+    heart.classList.toggle('text-red-500', !liked);
+    count.textContent = parseInt(count.textContent) + (liked ? -1 : 1);
+  }
+
+  // ─── Overlay Open/Close ───────────────────────────────────────────────────
+  function openCommentsOverlay(postId) {
+    currentPostId   = postId;
+    aiFilterEnabled = false;
+    // Reset AI button
+    document.getElementById('ai-help-btn').className = 'flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg hover:bg-gray-200 transition';
+    document.getElementById('ai-help-text').textContent = 'AI Filter';
+    document.getElementById('comments-stats').classList.add('hidden');
+    // Open
+    const ov = document.getElementById('comments-overlay');
+    ov.classList.remove('hidden'); ov.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    loadComments(postId);
+  }
+
+  function closeCommentsOverlay() {
+    const ov = document.getElementById('comments-overlay');
+    ov.classList.add('hidden'); ov.classList.remove('flex');
+    document.body.style.overflow = '';
+    currentPostId = null;
+    document.getElementById('comment-input').value = '';
+    resetAnalysisBar();
+  }
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  function updateCommentCount(delta) {
+    if (!currentPostId) return;
+    const el = document.getElementById(`comment-count-${currentPostId}`);
+    if (el) el.textContent = Math.max(0, parseInt(el.textContent) + delta);
+  }
+
+  function escHtml(s) {
+    const d = document.createElement('div');
+    d.appendChild(document.createTextNode(s));
+    return d.innerHTML;
+  }
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    // Backdrop click closes overlays
+    document.getElementById('comments-overlay').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeCommentsOverlay();
+    });
+    document.getElementById('delete-post-modal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeDeletePostModal();
+    });
+  });
+</script>
+
+{% endblock %}
+
+
+#########################
+uploads
+############################
+{% extends "base.html" %}
+
+{% block title %} Upload | NeoGram {% endblock %}
+
+{% block content %}
+
+<style>
+  /* ── Responsive Upload Card ── */
+  .upload-wrapper {
+    width: 100%;
+    min-height: 100dvh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: clamp(1rem, 4vw, 3rem) clamp(0.75rem, 4vw, 1.5rem);
+    box-sizing: border-box;
+  }
+
+  .upload-card {
+    width: 100%;
+    max-width: 480px;
+    border-radius: 1.25rem;
+    background: #fff;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+
+  /* Header */
+  .upload-header {
+    padding: clamp(0.75rem, 2.5vw, 1rem) clamp(1rem, 4vw, 1.5rem);
+    border-bottom: 1px solid #e5e7eb;
+    text-align: center;
+  }
+
+  .upload-header h2 {
+    font-size: clamp(1rem, 3.5vw, 1.125rem);
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+  }
+
+  /* Form */
+  .upload-form {
+    padding: clamp(1rem, 4vw, 1.5rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.75rem, 3vw, 1rem);
+  }
+
+  /* File drop zone */
+  .upload-dropzone {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: clamp(1.5rem, 6vw, 2.5rem) clamp(1rem, 4vw, 1.5rem);
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 0.875rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  .upload-dropzone:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+
+  .upload-dropzone span {
+    color: #6b7280;
+    font-size: clamp(0.78rem, 2.5vw, 0.875rem);
+    line-height: 1.5;
+  }
+
+  /* Caption textarea */
+  .upload-caption {
+    width: 100%;
+    padding: clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 0.875rem);
+    border-radius: 0.875rem;
+    border: 1px solid #e5e7eb;
+    color: #1f2937;
+    font-size: clamp(0.85rem, 2.5vw, 0.9375rem);
+    resize: vertical;
+    min-height: 80px;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    outline: none;
+  }
+
+  .upload-caption::placeholder {
+    color: #9ca3af;
+  }
+
+  .upload-caption:focus {
+    box-shadow: 0 0 0 2px #9ca3af;
+    border-color: transparent;
+  }
+
+  /* Submit button */
+  .upload-btn {
+    width: 100%;
+    padding: clamp(0.6rem, 2.5vw, 0.625rem);
+    background: #111827;
+    color: #fff;
+    font-size: clamp(0.875rem, 2.5vw, 1rem);
+    font-weight: 600;
+    border: none;
+    border-radius: 0.875rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+  }
+
+  .upload-btn:hover {
+    background: #374151;
+  }
+
+  /* ── Tiny phones (≤360px) ── */
+  @media (max-width: 360px) {
+    .upload-wrapper {
+      padding: 0.5rem;
+    }
+    .upload-card {
+      border-radius: 1rem;
+    }
+  }
+
+  /* ── Full-bleed on very small phones ── */
+  @media (max-width: 400px) {
+    .upload-card {
+      border-radius: 0.875rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+  }
+
+  /* ── Tablet+ ── */
+  @media (min-width: 640px) {
+    .upload-wrapper {
+      align-items: center;
+    }
+  }
+
+  /* ── Laptop / desktop ── */
+  @media (min-width: 1024px) {
+    .upload-card {
+      max-width: 520px;
+    }
+  }
+</style>
+
+<div class="upload-wrapper">
+  <div class="upload-card">
+
+    <!-- Header -->
+    <div class="upload-header">
+      <h2>Create a Post</h2>
+    </div>
+
+    <!-- Form — action/method/enctype unchanged -->
+    <form
+      action="{{ url_for('upload_post') }}"
+      method="POST"
+      enctype="multipart/form-data"
+      class="upload-form"
+    >
+
+      <!-- File input -->
+      <label class="upload-dropzone">
+        <span>Click to upload or drag and drop</span>
+        <input type="file" name="image" accept="image/*" class="hidden" required>
+      </label>
+
+      <!-- Caption -->
+      <textarea
+        name="caption"
+        rows="3"
+        class="upload-caption"
+        placeholder="Write a caption..."
+        required
+      ></textarea>
+
+      <!-- Submit -->
+      <button type="submit" class="upload-btn">Post</button>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}

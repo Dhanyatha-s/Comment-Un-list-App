@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+
+{% block title %}Home | NeonGram{% endblock %}
+
+{% block content %}
+  {% for post in posts %}
+    <!-- Post card -->
+    <div class="max-w-md mx-auto mt-12 rounded-2xl p-4 bg-gray-100/10 backdrop-blur-lg border-2 border-gray-200/20 shadow-lg">
+      <!-- Profile -->
+      <div class="flex items-center mb-4">
+        <!-- Profile Picture -->
+        <img src="{{ url_for('static', filename='uploads/profile-pic.jpg') }}" alt="profile picture"
+             class="w-10 h-10 rounded-full border-2 border-gray-200 shadow-md">
+
+        <!-- Username -->
+        <span class="ml-3 text-gray-900 font-semibold text-sm">
+          {{ post.author.username }}
+        </span>
+
+        <!-- Follow Button -->
+        <button class="ml-auto px-4 py-1.5 text-sm font-medium 
+                        border-2 border-gray-300 rounded-md
+                        text-gray-700 hover:bg-gray-300 hover:text-black 
+                        transition">
+          Follow
+        </button>
+      </div>
+
+      <!-- Post Image -->
+      <img src="{{ url_for('static', filename='uploads/' + post.image) }}" 
+           alt="post" class="w-full rounded-xl mb-4">
+
+      <!-- Action Bar -->
+      <div class="flex items-center space-x-6 mb-3">
+        <!-- Like Button -->
+        <div class="flex items-center space-x-2">
+          <button class="text-gray-800 hover:scale-110 transition">
+            <!-- Heart Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
+                 stroke-width="2" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" 
+                    d="M21 8.25c0-2.485-2.1-4.5-4.75-4.5-1.697 0-3.197.926-3.95 2.25
+                        -.753-1.324-2.253-2.25-3.95-2.25C6.1 3.75 4 5.765 4 8.25
+                        c0 7.22 8 11.25 8 11.25s8-4.03 8-11.25z" />
+            </svg>
+          </button>
+          <span class="text-gray-800 text-sm">{{ post.likes }}</span>
+        </div>
+
+        <!-- Comment Button -->
+        <div class="flex items-center space-x-2">
+          <button type="button" 
+                  class="hover:scale-110 transition"
+                  onclick="openCommentsOverlay({{ post.id }})">
+            <!-- Comment Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
+                 stroke-width="2" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" 
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8
+                        -1.575 0-3.05-.322-4.313-.894L3 20.25l1.318-3.947C3.488
+                        15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+          </button>
+          <span id="comment-count-{{ post.id }}" class="text-gray-800 text-sm">
+            {{ post.comments|length }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Caption -->
+      <div class="mb-3">
+        <p class="text-black text-sm">
+          <span class="text-black font-semibold">{{ post.author.username }}:</span>
+          {{ post.caption }}
+        </p>
+      </div>
+      
+      <!-- Timestamp -->
+      <div class="mb-1">
+        <p class="text-gray-400 text-sm">
+          {{ time_since(post.timestamp) }}
+        </p>
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- Comments Overlay with AI Features -->
+  <div id="comments-overlay" 
+       class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 backdrop-blur-sm">
+    <div class="bg-white w-full h-full md:w-2/3 md:h-4/5 md:rounded-xl shadow-2xl flex flex-col">
+      
+      <!-- Header with AI Help Button -->
+      <div class="flex justify-between items-center p-4 border-b bg-gray-50 md:rounded-t-xl">
+        <div class="flex items-center space-x-4">
+          <h2 class="text-xl font-bold text-gray-800">Comments</h2>
+          
+          <!-- AI Filter Toggle -->
+          <button id="ai-help-btn" 
+                  onclick="toggleAIFilter()"
+                  class="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition flex items-center space-x-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+              </path>
+            </svg>
+            <span id="ai-help-text">AI Help</span>
+          </button>
+          
+          <!-- Filter Status -->
+          <div id="filter-status" class="text-sm text-gray-600 hidden">
+            <span class="px-2 py-1 bg-green-100 text-green-800 rounded">
+              AI Filter: ON
+            </span>
+          </div>
+        </div>
+        
+        <button onclick="closeCommentsOverlay()" 
+                class="text-gray-600 hover:text-gray-800 text-3xl font-light">
+          &times;
+        </button>
+      </div>
+
+      <!-- Comments Stats (shown when AI filter is active) -->
+      <div id="comments-stats" class="hidden bg-blue-50 p-3 border-b">
+        <div class="flex justify-between text-sm text-blue-800">
+          <span>Total Comments: <strong id="total-comments">0</strong></span>
+          <span>Showing: <strong id="showing-comments">0</strong></span>
+          <span>Filtered Out: <strong id="filtered-comments">0</strong></span>
+        </div>
+      </div>
+
+      <!-- Comments Container -->
+      <div class="flex-1 overflow-y-auto p-4" id="comments-container">
+        <div class="text-center text-gray-500">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p class="mt-2">Loading comments...</p>
+        </div>
+      </div>
+
+      <!-- Comment Warning Modal -->
+      <div id="comment-warning" class="hidden absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+          <div class="flex items-center mb-4">
+            <svg class="w-8 h-8 text-yellow-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z">
+              </path>
+            </svg>
+            <h3 class="text-lg font-bold text-gray-800">AI Content Warning</h3>
+          </div>
+          
+          <div id="warning-content">
+            <p class="text-gray-600 mb-4">AI detected potential issues with your comment:</p>
+            <ul id="warning-reasons" class="list-disc list-inside text-red-600 mb-4 space-y-1"></ul>
+            <p class="text-sm text-gray-500 mb-4">Consider rephrasing to be more positive and constructive.</p>
+          </div>
+          
+          <div class="flex space-x-3">
+            <button onclick="editComment()" 
+                    class="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+              Edit Comment
+            </button>
+            <button onclick="forcePostComment()" 
+                    class="flex-1 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+              Post Anyway
+            </button>
+            <button onclick="cancelComment()" 
+                    class="flex-1 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Comment Section -->
+      <div class="p-4 border-t bg-gray-50 md:rounded-b-xl">
+        <div class="flex space-x-3">
+          <img src="{{ url_for('static', filename='uploads/profile-pic.jpg') }}" 
+               alt="your profile" class="w-8 h-8 rounded-full">
+          <div class="flex-1 flex">
+            <input id="comment-input" 
+                   type="text" 
+                   placeholder="Add a comment..."
+                   class="flex-1 border border-gray-300 rounded-l-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                   onkeypress="handleCommentKeyPress(event)">
+            <button onclick="submitComment()" 
+                    class="px-4 py-2 bg-blue-500 text-white text-sm rounded-r-lg hover:bg-blue-600 transition">
+              Post
+            </button>
+          </div>
+        </div>
+        
+        <!-- AI Analysis Preview -->
+        <div id="comment-preview" class="hidden mt-2 p-2 bg-gray-100 rounded text-xs">
+          <span class="text-gray-600">AI Analysis: </span>
+          <span id="preview-sentiment" class="font-semibold"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Enhanced JavaScript with AI filtering capabilities
+    let currentPostId = null;
+    let aiFilterEnabled = false;
+    let commentWarningData = null;
+
+    function toggleAIFilter() {
+      aiFilterEnabled = !aiFilterEnabled;
+      
+      const btn = document.getElementById('ai-help-btn');
+      const text = document.getElementById('ai-help-text');
+      const status = document.getElementById('filter-status');
+      const stats = document.getElementById('comments-stats');
+      
+      if (aiFilterEnabled) {
+        btn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+        btn.classList.add('bg-green-500', 'hover:bg-green-600');
+        text.textContent = 'AI ON';
+        status.classList.remove('hidden');
+        stats.classList.remove('hidden');
+      } else {
+        btn.classList.remove('bg-green-500', 'hover:bg-green-600');
+        btn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+        text.textContent = 'AI Help';
+        status.classList.add('hidden');
+        stats.classList.add('hidden');
+      }
+      
+      if (currentPostId) {
+        loadComments(currentPostId);
+      }
+    }
+
+    async function loadComments(postId) {
+      const container = document.getElementById('comments-container');
+      
+      try {
+        const url = aiFilterEnabled ? 
+          `/comments/${postId}?filter=ai` : 
+          `/comments/${postId}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (aiFilterEnabled && data.ai_filtered) {
+          document.getElementById('total-comments').textContent = data.total_original;
+          document.getElementById('showing-comments').textContent = data.total_filtered;
+          document.getElementById('filtered-comments').textContent = 
+            data.total_original - data.total_filtered;
+        }
+        
+        if (data.comments.length === 0) {
+          const emptyMessage = aiFilterEnabled ? 
+            "No appropriate comments to display. Try turning off AI filter." :
+            "No comments yet. Be the first to comment!";
+          
+          container.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+              <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.575 0-3.05-.322-4.313-.894L3 20.25l1.318-3.947C3.488 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                </path>
+              </svg>
+              <p>${emptyMessage}</p>
+            </div>
+          `;
+        } else {
+          container.innerHTML = data.comments.map(comment => {
+            const aiBadge = (aiFilterEnabled && comment.ai_reasons) ? 
+              `<div class="text-xs text-green-600 mt-1">
+                <span class="bg-green-100 px-2 py-1 rounded">✓ AI Approved</span>
+                ${comment.ai_reasons.includes('Contains humor') ? 
+                  '<span class="bg-blue-100 px-2 py-1 rounded ml-1">😄 Humor</span>' : ''}
+              </div>` : '';
+            
+            return `
+              <div class="flex space-x-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                <img src="{{ url_for('static', filename='uploads/profile-pic.jpg') }}" 
+                     alt="profile" class="w-8 h-8 rounded-full flex-shrink-0">
+                <div class="flex-1">
+                  <p class="text-sm">
+                    <span class="font-semibold text-gray-800">${comment.username}</span>
+                    <span class="text-gray-600 ml-2">${comment.content}</span>
+                  </p>
+                  <p class="text-xs text-gray-500 mt-1">${comment.timestamp}</p>
+                  ${aiBadge}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (error) {
+        console.error('Error loading comments:', error);
+        container.innerHTML = `
+          <div class="text-center text-red-500 py-8">
+            <p>Error loading comments. Please try again.</p>
+          </div>
+        `;
+      }
+    }
+
+    async function submitComment() {
+      const input = document.getElementById('comment-input');
+      const content = input.value.trim();
+      
+      if (!content) {
+        alert('Please enter a comment');
+        return;
+      }
+      
+      if (!currentPostId) {
+        alert('No post selected');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/comments/${currentPostId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            content: content,
+            force_post: false 
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (response.status === 422) {
+          showCommentWarning(data);
+          return;
+        }
+        
+        if (response.ok) {
+          input.value = '';
+          loadComments(currentPostId);
+          
+          const countElement = document.getElementById(`comment-count-${currentPostId}`);
+          if (countElement) {
+            countElement.textContent = parseInt(countElement.textContent) + 1;
+          }
+        } else {
+          alert(data.error || 'Error adding comment');
+        }
+      } catch (error) {
+        console.error('Error submitting comment:', error);
+        alert('Error submitting comment. Please try again.');
+      }
+    }
+
+    function showCommentWarning(warningData) {
+      commentWarningData = warningData;
+      const modal = document.getElementById('comment-warning');
+      const reasonsList = document.getElementById('warning-reasons');
+      
+      reasonsList.innerHTML = warningData.reasons.map(reason => 
+        `<li>${reason}</li>`
+      ).join('');
+      
+      modal.classList.remove('hidden');
+    }
+
+    function editComment() {
+      const modal = document.getElementById('comment-warning');
+      modal.classList.add('hidden');
+      
+      const input = document.getElementById('comment-input');
+      input.focus();
+      input.select();
+    }
+
+    async function forcePostComment() {
+      if (!commentWarningData || !currentPostId) return;
+      
+      const input = document.getElementById('comment-input');
+      const content = input.value.trim();
+      
+      try {
+        const response = await fetch(`/comments/${currentPostId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            content: content,
+            force_post: true 
+          })
+        });
+        
+        if (response.ok) {
+          input.value = '';
+          loadComments(currentPostId);
+          
+          const countElement = document.getElementById(`comment-count-${currentPostId}`);
+          if (countElement) {
+            countElement.textContent = parseInt(countElement.textContent) + 1;
+          }
+          
+          cancelComment();
+          showToast('Comment posted (bypassed AI filter)', 'warning');
+        }
+      } catch (error) {
+        console.error('Error force posting comment:', error);
+        alert('Error posting comment.');
+      }
+    }
+
+    function cancelComment() {
+      const modal = document.getElementById('comment-warning');
+      modal.classList.add('hidden');
+      commentWarningData = null;
+      document.getElementById('comment-input').value = '';
+    }
+
+    let analysisTimeout;
+    function analyzeCommentPreview() {
+      const input = document.getElementById('comment-input');
+      const preview = document.getElementById('comment-preview');
+      const sentiment = document.getElementById('preview-sentiment');
+      
+      clearTimeout(analysisTimeout);
+      
+      if (input.value.trim().length < 3) {
+        preview.classList.add('hidden');
+        return;
+      }
+      
+      analysisTimeout = setTimeout(async () => {
+        try {
+          const response = await fetch(`/comments/${currentPostId}/analyze`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content: input.value.trim() })
+          });
+          
+          const data = await response.json();
+          
+          if (data.analysis) {
+            const analysis = data.analysis.analysis;
+            let sentimentText = '';
+            let sentimentClass = '';
+            
+            if (analysis.sentiment.sentiment === 'positive') {
+              sentimentText = '😊 Positive';
+              sentimentClass = 'text-green-600';
+            } else if (analysis.sentiment.sentiment === 'negative') {
+              sentimentText = '😔 Negative';
+              sentimentClass = 'text-red-600';
+            } else {
+              sentimentText = '😐 Neutral';
+              sentimentClass = 'text-gray-600';
+            }
+            
+            if (analysis.is_humorous) {
+              sentimentText += ' 😄 Funny';
+            }
+            
+            if (!data.analysis.should_display) {
+              sentimentText += ' ⚠️ May be filtered';
+              sentimentClass = 'text-red-600';
+            }
+            
+            sentiment.textContent = sentimentText;
+            sentiment.className = sentimentClass;
+            preview.classList.remove('hidden');
+          }
+        } catch (error) {
+          console.error('Error analyzing comment:', error);
+        }
+      }, 1000);
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 ${
+        type === 'warning' ? 'bg-yellow-500' : 
+        type === 'error' ? 'bg-red-500' : 
+        type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+      }`;
+      toast.textContent = message;
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    function handleCommentKeyPress(event) {
+      if (event.key === 'Enter') {
+        submitComment();
+      }
+    }
+
+    function openCommentsOverlay(postId) {
+      currentPostId = postId;
+      const overlay = document.getElementById('comments-overlay');
+      
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+      
+      aiFilterEnabled = false;
+      const btn = document.getElementById('ai-help-btn');
+      const text = document.getElementById('ai-help-text');
+      const status = document.getElementById('filter-status');
+      const stats = document.getElementById('comments-stats');
+      
+      btn.classList.remove('bg-green-500', 'hover:bg-green-600');
+      btn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+      text.textContent = 'AI Help';
+      status.classList.add('hidden');
+      stats.classList.add('hidden');
+      
+      loadComments(postId);
+    }
+
+    function closeCommentsOverlay() {
+      const overlay = document.getElementById('comments-overlay');
+      overlay.classList.add('hidden');
+      overlay.classList.remove('flex');
+      document.body.style.overflow = 'auto';
+      
+      currentPostId = null;
+      aiFilterEnabled = false;
+      
+      document.getElementById('comment-input').value = '';
+      document.getElementById('comment-preview').classList.add('hidden');
+      document.getElementById('comment-warning').classList.add('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const commentInput = document.getElementById('comment-input');
+      if (commentInput) {
+        commentInput.addEventListener('input', analyzeCommentPreview);
+      }
+      
+      document.getElementById('comments-overlay').addEventListener('click', function(event) {
+        if (event.target === this) {
+          closeCommentsOverlay();
+        }
+      });
+    });
+  </script>
+
+{% endblock %}
