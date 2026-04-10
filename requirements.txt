@@ -6,3 +6,6 @@ eventlet
 Flask-WTF
 python-dotenv
 Pillow
+nltk
+scikit-learn
+gunicorn
