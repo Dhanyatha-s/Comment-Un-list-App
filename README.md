@@ -1,3 +1,4 @@
+[NeoGram_Minimal_Presentation.pptx](https://github.com/user-attachments/files/28179283/NeoGram_Minimal_Presentation.pptx)
 
 Social media toxicity is killing online communities, What if every social chatting apps gets a new feature where you won't be able to see or comment, neither have to delete "Negative comments". it would be great right? Less toxicity through education, not censorship.
 
